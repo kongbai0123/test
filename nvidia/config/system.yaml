@@ -1,5 +1,5 @@
 system:
   host: "127.0.0.1"
   port: 8000
-  mode: "development" # development / kiosk
+  mode: "kiosk" # development / kiosk
   device_type: "Jetson Orin Nano"

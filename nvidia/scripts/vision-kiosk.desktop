@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Vision Kiosk Autostart
+Exec=/opt/vision-system/scripts/start-kiosk.sh
+X-GNOME-Autostart-enabled=true
+NoDisplay=false
+Hidden=false
+Terminal=false

@@ -1,0 +1,8 @@
+# 1. 賦予安裝腳本執行權限
+chmod +x /home/user/workspace/nvidia/scripts/install.sh
+
+# 2. 自動輸入密碼執行部署與編譯
+echo "qwe123asd456" | sudo -S /home/user/workspace/nvidia/scripts/install.sh
+
+# 3. 若關閉畫面，可手動執行此指令重新開啟
+/opt/vision-system/scripts/start-kiosk.sh

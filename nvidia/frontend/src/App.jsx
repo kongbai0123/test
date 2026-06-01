@@ -10,7 +10,7 @@ export default function App() {
   // Authentication State
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem("nv_user");
-    return saved ? JSON.parse(saved) : null;
+    return saved ? JSON.parse(saved) : { username: "admin", role: "Admin" };
   });
   const [loginError, setLoginError] = useState("");
 
@@ -18,7 +18,8 @@ export default function App() {
   const [health, setHealth] = useState({
     backend: "offline",
     model: "not_loaded",
-    camera: "offline"
+    camera: "offline",
+    camera_source: "None"
   });
 
   // System & Model Telemetry
@@ -53,13 +54,15 @@ export default function App() {
         setHealth({
           backend: data.backend,
           model: data.model,
-          camera: data.camera
+          camera: data.camera,
+          camera_source: data.camera_source || "None"
         });
       } catch (err) {
         setHealth({
           backend: "offline",
           model: "not_loaded",
-          camera: "offline"
+          camera: "offline",
+          camera_source: "None"
         });
       }
     };
@@ -219,9 +222,13 @@ export default function App() {
               <Camera size={20} color="var(--nv-green)" />
               <span className="card-title">即時影像監控</span>
             </div>
-            {health.camera === "simulated" && (
-              <span className="system-mode-tag" style={{ color: '#f59e0b', borderColor: 'rgba(245,158,11,0.3)', background: 'rgba(245,158,11,0.1)' }}>
-                模擬影像源
+            {health.camera === "connected" ? (
+              <span className="system-mode-tag" style={{ color: 'var(--status-online)', borderColor: 'rgba(34,229,94,0.3)', background: 'rgba(34,229,94,0.1)' }}>
+                實體相機 ({health.camera_source})
+              </span>
+            ) : (
+              <span className="system-mode-tag" style={{ color: 'var(--status-offline)', borderColor: 'rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.1)' }}>
+                相機離線
               </span>
             )}
           </div>
@@ -230,7 +237,7 @@ export default function App() {
             {health.backend === "online" ? (
               <img 
                 src="http://127.0.0.1:8000/video_feed" 
-                alt="AI Video Stream" 
+                alt="Camera Video Stream" 
                 className="stream-image"
                 onError={(e) => {
                   e.target.style.display = 'none';

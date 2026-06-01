@@ -87,11 +87,20 @@ def load_users() -> list:
 
 @app.get("/health")
 def health():
+    camera_status = "offline"
+    camera_source = "None"
+    if camera_reader:
+        status_info = camera_reader.get_status()
+        if status_info.get("connected"):
+            camera_status = "connected"
+            camera_source = status_info.get("source", "Unknown")
+            
     return {
         "status": "ok",
         "backend": "online",
         "model": "loaded" if load_yaml_config("model.yaml").get("model", {}).get("loaded", False) else "not_loaded",
-        "camera": "connected" if (camera_reader and not camera_reader.is_mock) else "simulated"
+        "camera": camera_status,
+        "camera_source": camera_source
     }
 
 @app.get("/system/status")
@@ -186,3 +195,10 @@ def stop_inference():
 def inference_status():
     global inference_running
     return {"inference_running": inference_running}
+
+# Serve frontend static files if built
+dist_dir = os.path.join(BASE_DIR, "frontend", "dist")
+if os.path.exists(dist_dir):
+    from fastapi.staticfiles import StaticFiles
+    app.mount("/", StaticFiles(directory=dist_dir, html=True), name="static")
+

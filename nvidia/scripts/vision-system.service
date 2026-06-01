@@ -1,0 +1,15 @@
+[Unit]
+Description=Vision AI Kiosk System Backend & Frontend
+After=network.target
+
+[Service]
+Type=simple
+User=user
+WorkingDirectory=/opt/vision-system/backend
+ExecStart=/opt/vision-system/backend/venv/bin/python -m uvicorn app:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+Environment=PYTHONPATH=/opt/vision-system/backend
+
+[Install]
+WantedBy=multi-user.target
