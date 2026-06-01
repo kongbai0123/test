@@ -1,0 +1,14 @@
+{
+  "users": [
+    {
+      "username": "admin",
+      "password_hash": "admin123",
+      "role": "Admin"
+    },
+    {
+      "username": "operator",
+      "password_hash": "op123",
+      "role": "Operator"
+    }
+  ]
+}

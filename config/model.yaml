@@ -1,0 +1,6 @@
+model:
+  model_name: "road_seg.engine"
+  version: "1.1.0"
+  input_size: [640, 640]
+  backend: "TensorRT"
+  loaded: true

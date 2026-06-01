@@ -1,0 +1,65 @@
+# Workspace protected / local-only paths
+.prime_directive.md
+.antigravity_ignore
+Antigravity/
+algorithm_data/
+optimization/
+
+# Generated outputs
+outputs/
+**/outputs/
+**/runs/
+**/wandb/
+**/mlruns/
+
+# Local input media should not be published directly
+**/input/*.mp4
+**/input/*.avi
+**/input/*.mov
+**/input/*.mkv
+**/input/*.jpg
+**/input/*.jpeg
+**/input/*.png
+**/input/*.bmp
+!**/input/.gitkeep
+**/benchmark/videos/*.mp4
+**/benchmark/videos/*.avi
+**/benchmark/videos/*.mov
+**/benchmark/videos/*.mkv
+!**/benchmark/videos/.gitkeep
+
+# Python cache / test cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+pytest-cache-files-*/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Model artifacts
+*.pt
+*.pth
+*.onnx
+*.engine
+*.tflite
+*.pb
+
+# Dataset payloads should be explicitly curated before publishing
+**/road_dataset/images/train/*
+**/road_dataset/images/val/*
+**/road_dataset/images/test/*
+**/road_dataset/labels/train/*
+**/road_dataset/labels/val/*
+**/road_dataset/labels/test/*
+!**/road_dataset/**/.gitkeep
+!**/road_dataset/road.yaml
+
+# Editor / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
