@@ -93,8 +93,15 @@ class CameraReader:
                         print(f"Attempting to open CSI camera via GStreamer: {pipeline}")
                         self.cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
                         if self.cap is not None and self.cap.isOpened():
-                            opened = True
-                            print(f"CSI camera on Jetson initialized successfully (Source: {src})")
+                            # Verify if we can actually read a frame from CSI camera
+                            ret, img = self.cap.read()
+                            if ret and img is not None:
+                                opened = True
+                                print(f"CSI camera on Jetson initialized and read frame successfully (Source: {src})")
+                            else:
+                                print(f"CSI camera on Jetson opened but failed to read initial frame. Releasing CSI pipeline.")
+                                self.cap.release()
+                                self.cap = None
                     
                     if not opened:
                         print(f"Attempting to open camera using default API (Source: {src})")

@@ -10,7 +10,7 @@ export default function App() {
   // Authentication State
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem("nv_user");
-    return saved ? JSON.parse(saved) : { username: "admin", role: "Admin" };
+    return saved ? JSON.parse(saved) : null;
   });
   const [loginError, setLoginError] = useState("");
 
@@ -130,7 +130,6 @@ export default function App() {
     e.preventDefault();
     setLoginError("");
     try {
-      // Direct login: automatically authenticate using default admin account
       const data = await api.login("admin", "admin123");
       if (data.success) {
         setUser(data.user);
@@ -175,7 +174,7 @@ export default function App() {
       <div className="login-card glass-panel">
         <div className="login-header">
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
-            <img src={logoImg} alt="Logo" style={{ height: '55px', objectFit: 'contain', filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.15))' }} />
+            <img src={logoImg} alt="Logo" style={{ height: '72px', objectFit: 'contain', filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.15))' }} />
           </div>
           <h1>NVIDIA 邊緣 AI 控制面板</h1>
           <p>系統診斷正常，請點擊下方按鈕進入控制面板</p>
@@ -186,17 +185,17 @@ export default function App() {
         {/* Diagnostic Bar before Login */}
         <div className="diagnostics-bar">
           <div className="diag-item">
-            <Server size={16} />
+            <Server size={20} />
             <span>後端服務</span>
             <div className={`status-dot ${health.backend === "online" ? "online" : "offline"}`} />
           </div>
           <div className="diag-item">
-            <Activity size={16} />
+            <Activity size={20} />
             <span>AI 模型</span>
             <div className={`status-dot ${health.model === "loaded" ? "online" : "offline"}`} />
           </div>
           <div className="diag-item">
-            <Camera size={16} />
+            <Camera size={20} />
             <span>影像相機</span>
             <div className={`status-dot ${
               health.camera === "connected" ? "online" : (health.camera === "simulated" ? "simulated" : "offline")
@@ -236,7 +235,7 @@ export default function App() {
           <div className={`video-container ${inferenceRunning ? "active" : "paused"}`}>
             {health.backend === "online" ? (
               <img 
-                src="http://127.0.0.1:8000/video_feed" 
+                src="/video_feed" 
                 alt="Camera Video Stream" 
                 className="stream-image"
                 onError={(e) => {
