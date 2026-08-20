@@ -7,22 +7,31 @@ import asyncio
 # Ensure the backend directory is in the Python search path for sibling imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from fastapi import FastAPI, HTTPException, Depends, status
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, HTTPException, Depends, Request, status
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, List, Optional
 
 from system_monitor import get_system_status
-from camera import CameraReader
+from camera import (
+    CameraBusyError,
+    CameraReader,
+)
+from camera_capabilities import discover_nvidia_csi_capabilities
 
 app = FastAPI(title="Vision AI Backend API (PC Developer Version)")
 
-# Allow CORS for development (React runs on 3000, backend on 8000)
+# Only the local kiosk/development origins may read camera data.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=[
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3000",
+    ],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -44,6 +53,9 @@ class UserConfig(BaseModel):
     username: str
     password_hash: str
     role: str
+
+class CameraFpsRequest(BaseModel):
+    fps: int
 
 # --- Startup and Shutdown Events ---
 @app.on_event("startup")
@@ -82,6 +94,21 @@ def load_users() -> list:
         except Exception as e:
             print(f"Error loading users: {e}")
     return []
+
+def require_local_camera_control(request: Request) -> None:
+    """Protect the mutating endpoint from cross-origin localhost requests."""
+    client_host = request.client.host if request.client else ""
+    if client_host not in {"127.0.0.1", "::1", "localhost"}:
+        raise HTTPException(status_code=403, detail="Camera settings are local-only")
+    origin = request.headers.get("origin")
+    allowed_origins = {
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3000",
+    }
+    if origin and origin not in allowed_origins:
+        raise HTTPException(status_code=403, detail="Cross-origin camera control is not allowed")
 
 # --- API Endpoints ---
 
@@ -122,6 +149,38 @@ def camera_status():
         "connected": False
     }
 
+@app.get("/camera/capabilities")
+def camera_capabilities():
+    if camera_reader:
+        return camera_reader.get_capabilities()
+    # This path is only reachable before application startup has completed;
+    # there is no active CaptureSession to compete with.
+    return discover_nvidia_csi_capabilities(0).to_dict(camera_status())
+
+@app.put("/camera/fps", status_code=202)
+def update_camera_fps(settings: CameraFpsRequest, request: Request):
+    require_local_camera_control(request)
+    if camera_reader is None:
+        raise HTTPException(status_code=503, detail="Camera service is not ready")
+    try:
+        operation = camera_reader.submit_fps(settings.fps)
+        response_status = 200 if operation["status"] == "succeeded" else 202
+        return JSONResponse(content=operation, status_code=response_status)
+    except CameraBusyError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except Exception as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+
+@app.get("/camera/fps/{operation_id}")
+def camera_fps_operation(operation_id: str, request: Request):
+    require_local_camera_control(request)
+    if camera_reader is None:
+        raise HTTPException(status_code=503, detail="Camera service is not ready")
+    operation = camera_reader.get_operation(operation_id)
+    if operation is None:
+        raise HTTPException(status_code=404, detail="Camera operation was not found")
+    return operation
+
 @app.get("/model/status")
 def model_status():
     model_cfg = load_yaml_config("model.yaml").get("model", {})
@@ -142,22 +201,34 @@ def model_status():
 # Video streaming helper generator
 def video_frame_generator():
     global camera_reader
+    active_reader = None
+    last_sequence = -1
     while True:
-        if camera_reader:
-            frame_bytes = camera_reader.get_frame()
-            if frame_bytes:
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-        # Pause slightly to match frame timing (about 30 FPS)
-        time_to_sleep = 0.03
-        import time
-        time.sleep(time_to_sleep)
+        reader = camera_reader
+        if reader is None:
+            import time
+            time.sleep(0.1)
+            continue
+        if reader is not active_reader:
+            active_reader = reader
+            last_sequence = -1
+        frame_bytes, sequence = reader.wait_for_frame(last_sequence, timeout=1.0)
+        if not reader.running:
+            return
+        if frame_bytes and sequence != last_sequence:
+            last_sequence = sequence
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
 
 @app.get("/video_feed")
 def video_feed():
     return StreamingResponse(
         video_frame_generator(), 
-        media_type="multipart/x-mixed-replace; boundary=frame"
+        media_type="multipart/x-mixed-replace; boundary=frame",
+        headers={
+            "Cache-Control": "no-store",
+            "Cross-Origin-Resource-Policy": "same-origin",
+        },
     )
 
 @app.post("/auth/login")
@@ -201,4 +272,3 @@ dist_dir = os.path.join(BASE_DIR, "frontend", "dist")
 if os.path.exists(dist_dir):
     from fastapi.staticfiles import StaticFiles
     app.mount("/", StaticFiles(directory=dist_dir, html=True), name="static")
-

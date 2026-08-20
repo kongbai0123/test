@@ -39,6 +39,10 @@ cp -r /home/user/workspace/nvidia/scripts /opt/vision-system/
 # Make sure scripts are executable
 chmod +x /opt/vision-system/scripts/*.sh
 
+# Build the optional, property-only Libargus mode enumerator on Jetson. The
+# script is non-fatal by design because Device Tree remains a safe fallback.
+bash /opt/vision-system/scripts/build-argus-enumerator.sh || true
+
 # 5. Set up Python Virtual Environment in backend
 echo "Setting up Python virtual environment..."
 # Check and install python3-venv package if not present

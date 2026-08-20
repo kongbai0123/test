@@ -2,7 +2,10 @@
 Type=Application
 Name=Vision Kiosk Autostart
 Exec=/opt/vision-system/scripts/start-kiosk.sh
+TryExec=/opt/vision-system/scripts/start-kiosk.sh
 X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=5
 NoDisplay=false
 Hidden=false
 Terminal=false
+StartupNotify=false

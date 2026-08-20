@@ -1,0 +1,5 @@
+# Local editor/development backups
+*.bak.*
+
+# Jetson-specific build output (built by scripts/build-argus-enumerator.sh)
+backend/tools/argus-mode-enumerator
