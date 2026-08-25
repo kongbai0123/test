@@ -1,7 +1,0 @@
-fastapi
-numpy
-opencv-python
-psutil
-pydantic
-PyYAML
-uvicorn
