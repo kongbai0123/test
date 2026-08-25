@@ -1,0 +1,3 @@
+"""
+src/gui package initialization
+"""
